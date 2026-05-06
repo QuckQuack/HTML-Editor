@@ -504,12 +504,93 @@ textarea.script-ta {
 }
 
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+
+/* ─── Mobile sidebar toggle ─── */
+#sidebarToggle {
+  display: none;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  padding: .2rem .55rem;
+  border-radius: 4px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 640px) {
+  #sidebarToggle { display: inline-flex; align-items: center; }
+
+  .topbar {
+    padding: 0 .75rem;
+    gap: .4rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .topbar::-webkit-scrollbar { display: none; }
+  .topbar-title { font-size: .6rem; }
+  .btn { font-size: .65rem; padding: .32rem .6rem; }
+
+  .layout {
+    position: relative;
+    overflow: visible;
+    height: calc(100vh - 52px);
+  }
+
+  .sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    z-index: 150;
+    transform: translateX(-100%);
+    transition: transform .2s ease;
+    width: 220px;
+    box-shadow: 4px 0 16px rgba(0,0,0,.5);
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .editor-area {
+    padding: 1rem .75rem;
+    gap: 1rem;
+  }
+
+  .section-card-header .btn { padding: .2rem .4rem; font-size: .58rem; }
+
+  .field-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .3rem;
+  }
+  .field-label { min-width: unset; }
+
+  .two-col { grid-template-columns: 1fr; }
+
+  .add-item-row { flex-wrap: wrap; gap: .4rem; }
+
+  .item-note-preview { max-width: 140px; }
+
+  .tab-meta-box { padding: .8rem .9rem; }
+
+  .drop-zone { padding: 2rem 1.5rem; }
+
+  .upload-area { padding: 1.5rem .75rem; }
+
+  .modal { padding: 1.1rem 1rem; }
+
+  #toast { bottom: 1rem; right: .75rem; left: .75rem; text-align: center; }
+}
 </style>
 </head>
 <body>
 
 
 <div class="topbar">
+  <button id="sidebarToggle" onclick="toggleMobileSidebar()" title="Toggle tabs">☰</button>
   <span class="topbar-title"> CyberPatriot Editor</span>
   <span class="topbar-sep"></span>
   <button class="btn" onclick="importNew()"> Load HTML</button>
@@ -819,6 +900,8 @@ function selectTab(i) {
   state.activeTabIdx = i;
   renderSidebar();
   renderEditor();
+  const sb = document.getElementById('sidebar');
+  if (sb && window.innerWidth <= 640) sb.classList.remove('mobile-open');
 }
 
 function addTab() {
@@ -1334,6 +1417,11 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+
+function toggleMobileSidebar() {
+  const sb = document.getElementById('sidebar');
+  if (sb) sb.classList.toggle('mobile-open');
+}
 
 function el(tag, cls) {
   const e = document.createElement(tag);
