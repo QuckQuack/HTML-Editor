@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberPatriot Checklist Editor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #0a0d13;
+  --surface: #111620;
+  --surface2: #161d2b;
+  --surface3: #1c2438;
+  --border: #1e2a3d;
+  --border2: #28394f;
+  --accent: #4ea8de;
+  --accent2: #63e5b0;
+  --danger: #e07070;
+  --warn: #f6a96a;
+  --text: #d6e0f0;
+  --text-dim: #6e8aab;
+  --text-faint: #3a4f6a;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Top Bar ─── */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  flex-shrink: 0;
+}
+
+.topbar-title {
+  font-family: var(--mono);
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.topbar-sep { flex: 1; }
+
+.btn {
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text-dim);
+  font-family: var(--sans);
+  font-size: .72rem;
+  font-weight: 600;
+  padding: .38rem .85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+.btn.primary:hover { background: #6dc8f7; border-color: #6dc8f7; }
+.btn.danger { border-color: rgba(224,112,112,.4); color: var(--danger); }
+.btn.danger:hover { border-color: var(--danger); background: rgba(224,112,112,.1); }
+.btn.success { border-color: rgba(99,229,176,.4); color: var(--accent2); }
+.btn.success:hover { border-color: var(--accent2); background: rgba(99,229,176,.08); }
+
+/* ─── Layout ─── */
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: calc(100vh - 52px);
+}
+
+/* ─── Sidebar ─── */
+.sidebar {
+  width: 240px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: .9rem 1rem .6rem;
+  font-family: var(--mono);
+  font-size: .6rem;
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tabs-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: .5rem 0;
+}
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .45rem 1rem;
+  cursor: pointer;
+  transition: background .12s;
+  border-left: 2px solid transparent;
+  user-select: none;
+}
+.tab-item:hover { background: var(--surface2); }
+.tab-item.active { background: var(--surface2); border-left-color: var(--accent); }
+
+.tab-drag { color: var(--text-faint); font-size: .8rem; cursor: grab; }
+.tab-name {
+  flex: 1;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tab-item.active .tab-name { color: var(--accent); }
+.tab-del { color: var(--text-faint); font-size: .75rem; padding: 2px 4px; border-radius: 2px; opacity: 0; transition: opacity .12s; }
+.tab-item:hover .tab-del { opacity: 1; }
+.tab-del:hover { color: var(--danger); }
+
+/* ─── Main Editor ─── */
+.editor-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.section-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.section-card-header {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .7rem 1rem;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: .62rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.section-card-header .btn { padding: .25rem .55rem; font-size: .62rem; }
+.section-spacer { flex: 1; }
+
+/* Tab meta editor */
+.tab-meta-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.1rem 1.2rem;
+}
+.tab-meta-box h3 {
+  font-family: var(--mono);
+  font-size: .62rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: .9rem;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .65rem;
+}
+.field-label {
+  font-size: .72rem;
+  color: var(--text-dim);
+  font-weight: 500;
+  min-width: 100px;
+}
+
+input[type="text"], textarea, select {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: .8rem;
+  padding: .4rem .65rem;
+  width: 100%;
+  transition: border-color .15s;
+  outline: none;
+}
+input[type="text"]:focus,
+textarea:focus,
+select:focus { border-color: var(--accent); }
+select { font-family: var(--sans); }
+
+textarea {
+  font-family: var(--mono);
+  font-size: .72rem;
+  line-height: 1.65;
+  resize: vertical;
+  min-height: 80px;
+}
+
+textarea.script-ta {
+  min-height: 200px;
+  background: #06090e;
+  color: #b4cce8;
+}
+
+/* Content items */
+.content-item {
+  border-bottom: 1px solid var(--border);
+}
+.content-item:last-child { border-bottom: none; }
+
+.content-item-header {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .5rem .8rem;
+  background: transparent;
+  transition: background .1s;
+}
+.content-item-header:hover { background: var(--surface2); }
+
+.item-type-badge {
+  font-family: var(--mono);
+  font-size: .5rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.type-task   { background: rgba(78,168,222,.12); color: var(--accent);  border: 1px solid rgba(78,168,222,.3); }
+.type-script { background: rgba(91,207,207,.1);  color: #5bcfcf;        border: 1px solid rgba(91,207,207,.3); }
+.type-alert  { background: rgba(246,169,106,.1); color: var(--warn);    border: 1px solid rgba(246,169,106,.3); }
+.type-section { background: rgba(110,138,171,.1); color: var(--text-dim); border: 1px solid rgba(110,138,171,.3); }
+
+.item-summary {
+  flex: 1;
+  font-size: .8rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.item-note-preview {
+  font-size: .7rem;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.item-actions { display: flex; gap: .3rem; align-items: center; }
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-faint);
+  font-size: .8rem;
+  padding: 3px 6px;
+  border-radius: 3px;
+  transition: all .12s;
+  display: inline-flex;
+  align-items: center;
+}
+.icon-btn:hover { background: var(--surface3); color: var(--text); }
+.icon-btn.del:hover { color: var(--danger); }
+.icon-btn.up:hover { color: var(--accent2); }
+
+/* Expand panel */
+.item-expand {
+  display: none;
+  padding: .8rem 1rem 1rem;
+  background: var(--surface2);
+  border-top: 1px solid var(--border);
+  gap: .65rem;
+  flex-direction: column;
+}
+.item-expand.open { display: flex; }
+
+/* ─── Empty state ─── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: var(--text-faint);
+  text-align: center;
+  gap: .75rem;
+}
+.empty-state .icon { font-size: 2.5rem; opacity: .4; }
+.empty-state p { font-size: .85rem; }
+
+/* ─── Modal ─── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 1.4rem 1.6rem;
+  width: 500px;
+  max-width: 95vw;
+  display: flex;
+  flex-direction: column;
+  gap: .9rem;
+}
+.modal h2 {
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+.modal-actions { display: flex; gap: .6rem; justify-content: flex-end; margin-top: .3rem; }
+
+/* ─── Toast ─── */
+#toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  padding: .65rem 1.1rem;
+  font-size: .78rem;
+  color: var(--accent2);
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all .2s;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+
+/* ─── Upload area ─── */
+.upload-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem;
+}
+.drop-zone {
+  border: 2px dashed var(--border2);
+  border-radius: 10px;
+  padding: 3rem 4rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  max-width: 480px;
+  width: 100%;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(78,168,222,.05);
+}
+.drop-zone .icon { font-size: 2.5rem; margin-bottom: .75rem; opacity: .5; }
+.drop-zone h2 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: .5rem; }
+.drop-zone p { font-size: .82rem; color: var(--text-dim); line-height: 1.6; }
+.drop-zone input[type="file"] { display: none; }
+
+/* Color dot */
+.color-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,.15);
+}
+
+/* Section heading in editor */
+.editor-section-title {
+  font-family: var(--mono);
+  font-size: .65rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: .5rem;
+  padding-bottom: .35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+/* Add item buttons row */
+.add-item-row {
+  display: flex;
+  gap: .5rem;
+  padding: .6rem .8rem;
+  background: var(--surface2);
+  border-top: 1px solid var(--border);
+}
+
+.badge-row {
+  display: flex;
+  gap: .4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.badge-opt {
+  font-family: var(--mono);
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  color: var(--text-faint);
+  background: none;
+  transition: all .12s;
+}
+.badge-opt.sel-crit { background: rgba(224,112,112,.15); color: var(--danger); border-color: rgba(224,112,112,.4); }
+.badge-opt.sel-warn { background: rgba(246,169,106,.12); color: var(--warn); border-color: rgba(246,169,106,.35); }
+.badge-opt.sel-none { background: var(--surface3); color: var(--text-dim); border-color: var(--border2); }
+
+.global-header-area {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+}
+
+/* Tab reorder drag */
+.tab-item.dragging { opacity: .4; }
+.tab-item.drag-over-tab { border-top: 2px solid var(--accent); }
+
+/* Help text */
+.help-text {
+  font-size: .7rem;
+  color: var(--text-faint);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+</style>
+</head>
+<body>
+
+
+<div class="topbar">
+  <span class="topbar-title"> CyberPatriot Editor</span>
+  <span class="topbar-sep"></span>
+  <button class="btn" onclick="importNew()"> Load HTML</button>
+  <button class="btn" onclick="startFresh()">＋ New Checklist</button>
+  <button class="btn success" onclick="exportHTML()"> Export HTML</button>
+</div>
+
+
+<div class="layout" id="mainLayout">
+
+  <div class="upload-area" id="uploadScreen">
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()" 
+         ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+      <div class="icon"></div>
+      <h2>Load Your Checklist</h2>
+      <p>Drop your <strong>cyberpatriot .html</strong> file here, or click to browse.<br>
+         You can also start fresh with a blank checklist.</p>
+      <input type="file" id="fileInput" accept=".html" onchange="loadFile(event)">
+    </div>
+    <button class="btn" style="font-size:.8rem;padding:.55rem 1.3rem;" onclick="startFresh()">Or start with a blank checklist →</button>
+  </div>
+
+
+  <div class="sidebar" id="sidebar" style="display:none;">
+    <div class="sidebar-header">
+      <span>Tabs</span>
+      <button class="btn" style="font-size:.58rem;padding:.2rem .5rem;" onclick="addTab()">+ Tab</button>
+    </div>
+    <div class="tabs-list" id="tabsList"></div>
+  </div>
+
+  <div class="editor-area" id="editorArea" style="display:none;"></div>
+</div>
+
+
+<div class="modal-overlay" id="addTabModal">
+  <div class="modal">
+    <h2>Add New Tab</h2>
+    <div class="field-row">
+      <span class="field-label">Tab Name</span>
+      <input type="text" id="newTabName" placeholder="e.g. Forensics">
+    </div>
+    <div class="field-row">
+      <span class="field-label">Tab ID</span>
+      <input type="text" id="newTabId" placeholder="e.g. forensics (no spaces)">
+    </div>
+    <div class="field-row">
+      <span class="field-label">Accent Color</span>
+      <input type="text" id="newTabColor" placeholder="#63e5b0" value="#63e5b0" style="width:130px;flex:none;">
+    </div>
+    <div class="field-row">
+      <span class="field-label">Description</span>
+      <input type="text" id="newTabDesc" placeholder="Brief description of this tab">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('addTabModal')">Cancel</button>
+      <button class="btn primary" onclick="confirmAddTab()">Add Tab</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="toast"></div>
+
+<script>
+
+let state = {
+  title: 'CyberPatriot NCCS — Master Checklist',
+  headerMeta: '// ordered by run sequence · script everything possible · GPO Backup tab if S4 fails',
+  tabs: [],
+  activeTabIdx: 0
+};
+
+
+const COLORS = [
+  '#63b3ed','#4fd1a8','#f6a96a','#9f85e8','#e8c468',
+  '#60a5d4','#5bcfcf','#7ec8e3','#60cdff','#c586d4',
+  '#e8a87c','#4ec994','#a3e4b0','#e07070','#f9a8d4'
+];
+
+
+function parseHTML(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  const s = {
+    title: doc.title || 'CyberPatriot Checklist',
+    headerMeta: '',
+    tabs: []
+  };
+
+  const metaEl = doc.querySelector('.header-meta');
+  if (metaEl) s.headerMeta = metaEl.textContent.trim();
+
+  
+  const tabBtns = doc.querySelectorAll('.tab-btn');
+  tabBtns.forEach(btn => {
+    const onclick = btn.getAttribute('onclick') || '';
+    const m = onclick.match(/sw\(this,'([^']+)'\)/);
+    if (!m) return;
+    const id = m[1];
+    const panel = doc.getElementById('panel-' + id);
+    if (!panel) return;
+
+    
+    const cls = [...btn.classList].find(c => c.startsWith('t-') && c !== 't-all');
+    let color = '#5bcfcf';
+    
+    const varName = cls ? `--c-${cls.slice(2)}` : null;
+
+    
+    const stepEl = btn.querySelector('.tab-step');
+    const tabName = stepEl
+      ? btn.textContent.replace(stepEl.textContent, '').trim()
+      : btn.textContent.trim();
+
+    
+    const panelTitle = panel.querySelector('.panel-title')?.textContent.trim() || tabName;
+    const panelDesc = panel.querySelector('.panel-desc')?.textContent.trim() || '';
+
+    
+    const alerts = [];
+    panel.querySelectorAll('.alert').forEach(al => {
+      alerts.push({ type: 'alert', html: al.innerHTML.trim() });
+    });
+
+    
+    const items = [];
+   
+    const sections = panel.querySelectorAll('.section');
+    sections.forEach(sec => {
+      const secTitle = sec.querySelector('.section-title')?.textContent.trim();
+      if (secTitle) {
+        items.push({ type: 'section', text: secTitle });
+      }
+
+      
+      sec.querySelectorAll('.ps-script').forEach(pre => {
+        const id = pre.id || '';
+        const copyBtn = pre.previousElementSibling;
+        items.push({ type: 'script', id, code: pre.innerText || pre.textContent });
+      });
+
+      
+      sec.querySelectorAll('.item').forEach(it => {
+        const nameEl = it.querySelector('.item-name');
+        const noteEl = it.querySelector('.item-note');
+        const badge = it.querySelector('.badge');
+        items.push({
+          type: 'task',
+          name: nameEl?.innerHTML.trim() || '',
+          note: noteEl?.innerHTML.trim() || '',
+          badge: badge ? (badge.classList.contains('badge-crit') ? 'crit' : 'warn') : ''
+        });
+      });
+    });
+
+    
+    panel.querySelectorAll(':scope > .item').forEach(it => {
+      const nameEl = it.querySelector('.item-name');
+      const noteEl = it.querySelector('.item-note');
+      const badge = it.querySelector('.badge');
+      items.push({
+        type: 'task',
+        name: nameEl?.innerHTML.trim() || '',
+        note: noteEl?.innerHTML.trim() || '',
+        badge: badge ? (badge.classList.contains('badge-crit') ? 'crit' : 'warn') : ''
+      });
+    });
+
+    
+    panel.querySelectorAll(':scope > div > .ps-script, :scope > .ps-script').forEach(pre => {
+      if (!pre.closest('.section')) {
+        items.push({ type: 'script', id: pre.id || '', code: pre.innerText || pre.textContent });
+      }
+    });
+
+    s.tabs.push({
+      id,
+      name: tabName,
+      color: COLORS[s.tabs.length % COLORS.length],
+      panelTitle,
+      panelDesc,
+      alerts,
+      items
+    });
+  });
+
+  
+  if (s.tabs.length === 0) {
+    s.tabs.push(defaultTab());
+  }
+
+  return s;
+}
+
+function defaultTab() {
+  return {
+    id: 'tab1',
+    name: 'New Tab',
+    color: '#4fd1a8',
+    panelTitle: 'New Tab',
+    panelDesc: 'Description here.',
+    alerts: [],
+    items: []
+  };
+}
+
+
+function loadFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    state = parseHTML(ev.target.result);
+    showEditor();
+    renderSidebar();
+    selectTab(0);
+    toast('Checklist loaded! ' + state.tabs.length + ' tabs found.');
+  };
+  reader.readAsText(file);
+}
+
+function importNew() {
+  document.getElementById('fileInput').click();
+}
+
+function startFresh() {
+  state = {
+    title: 'CyberPatriot Checklist',
+    headerMeta: '// edit me',
+    tabs: [defaultTab()]
+  };
+  showEditor();
+  renderSidebar();
+  selectTab(0);
+  toast('Started fresh checklist.');
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.add('drag-over');
+}
+function handleDragLeave() {
+  document.getElementById('dropZone').classList.remove('drag-over');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    state = parseHTML(ev.target.result);
+    showEditor();
+    renderSidebar();
+    selectTab(0);
+    toast('Loaded ' + state.tabs.length + ' tabs.');
+  };
+  reader.readAsText(file);
+}
+
+function showEditor() {
+  document.getElementById('uploadScreen').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'flex';
+  document.getElementById('editorArea').style.display = 'flex';
+}
+
+
+function renderSidebar() {
+  const list = document.getElementById('tabsList');
+  list.innerHTML = '';
+  state.tabs.forEach((tab, i) => {
+    const div = document.createElement('div');
+    div.className = 'tab-item' + (i === state.activeTabIdx ? ' active' : '');
+    div.draggable = true;
+    div.dataset.idx = i;
+    div.innerHTML = `
+      <span class="tab-drag">⠿</span>
+      <span class="color-dot" style="background:${tab.color}"></span>
+      <span class="tab-name">${esc(tab.name)}</span>
+      <button class="tab-del icon-btn del" title="Delete tab" onclick="deleteTab(event,${i})">✕</button>
+    `;
+    div.addEventListener('click', () => selectTab(i));
+    div.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', i); div.classList.add('dragging'); });
+    div.addEventListener('dragend', () => div.classList.remove('dragging'));
+    div.addEventListener('dragover', e => { e.preventDefault(); div.classList.add('drag-over-tab'); });
+    div.addEventListener('dragleave', () => div.classList.remove('drag-over-tab'));
+    div.addEventListener('drop', e => {
+      e.preventDefault();
+      div.classList.remove('drag-over-tab');
+      const from = parseInt(e.dataTransfer.getData('text/plain'));
+      const to = parseInt(div.dataset.idx);
+      if (from !== to) {
+        const [moved] = state.tabs.splice(from, 1);
+        state.tabs.splice(to, 0, moved);
+        state.activeTabIdx = to;
+        renderSidebar();
+        renderEditor();
+      }
+    });
+    list.appendChild(div);
+  });
+}
+
+function selectTab(i) {
+  state.activeTabIdx = i;
+  renderSidebar();
+  renderEditor();
+}
+
+function addTab() {
+  document.getElementById('newTabName').value = '';
+  document.getElementById('newTabId').value = '';
+  document.getElementById('newTabColor').value = COLORS[state.tabs.length % COLORS.length];
+  document.getElementById('newTabDesc').value = '';
+  openModal('addTabModal');
+}
+
+function confirmAddTab() {
+  const name = document.getElementById('newTabName').value.trim();
+  const id = document.getElementById('newTabId').value.trim().replace(/\s+/g,'-').toLowerCase() || 'tab-' + Date.now();
+  const color = document.getElementById('newTabColor').value.trim() || '#4fd1a8';
+  const desc = document.getElementById('newTabDesc').value.trim();
+  if (!name) { alert('Tab name required.'); return; }
+  state.tabs.push({ id, name, color, panelTitle: name, panelDesc: desc, alerts: [], items: [] });
+  closeModal('addTabModal');
+  renderSidebar();
+  selectTab(state.tabs.length - 1);
+  toast('Tab "' + name + '" added.');
+}
+
+function deleteTab(e, i) {
+  e.stopPropagation();
+  if (!confirm('Delete tab "' + state.tabs[i].name + '"?')) return;
+  state.tabs.splice(i, 1);
+  if (state.activeTabIdx >= state.tabs.length) state.activeTabIdx = state.tabs.length - 1;
+  if (state.tabs.length === 0) state.tabs.push(defaultTab());
+  renderSidebar();
+  renderEditor();
+  toast('Tab deleted.');
+}
+
+
+function renderEditor() {
+  const area = document.getElementById('editorArea');
+  area.innerHTML = '';
+
+  if (state.tabs.length === 0) {
+    area.innerHTML = '<div class="empty-state"><div class="icon"></div><p>No tabs yet. Add one!</p></div>';
+    return;
+  }
+
+  const tab = state.tabs[state.activeTabIdx];
+  if (!tab) return;
+
+
+  if (state.activeTabIdx === 0) {
+    const headerBox = el('div', 'global-header-area');
+    headerBox.innerHTML = `
+      <div class="editor-section-title">Global Header</div>
+      <div class="field-row">
+        <span class="field-label">Document Title</span>
+        <input type="text" value="${esc(state.title)}" oninput="state.title=this.value" placeholder="Checklist title">
+      </div>
+      <div class="field-row">
+        <span class="field-label">Header Meta</span>
+        <input type="text" value="${esc(state.headerMeta)}" oninput="state.headerMeta=this.value" placeholder="// subtitle text">
+      </div>
+    `;
+    area.appendChild(headerBox);
+  }
+
+
+  const metaBox = el('div', 'tab-meta-box');
+  metaBox.innerHTML = `
+    <h3>Tab Settings</h3>
+    <div class="two-col">
+      <div class="field-row">
+        <span class="field-label">Tab Name</span>
+        <input type="text" value="${esc(tab.name)}" oninput="state.tabs[${state.activeTabIdx}].name=this.value;renderSidebar()">
+      </div>
+      <div class="field-row">
+        <span class="field-label">Tab ID</span>
+        <input type="text" value="${esc(tab.id)}" oninput="state.tabs[${state.activeTabIdx}].id=this.value">
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="field-row">
+        <span class="field-label">Panel Title</span>
+        <input type="text" value="${esc(tab.panelTitle)}" oninput="state.tabs[${state.activeTabIdx}].panelTitle=this.value">
+      </div>
+      <div class="field-row">
+        <span class="field-label">Accent Color</span>
+        <div style="display:flex;gap:.5rem;align-items:center;flex:1;">
+          <input type="color" value="${tab.color}" oninput="state.tabs[${state.activeTabIdx}].color=this.value;renderSidebar()" 
+                 style="width:40px;height:32px;border-radius:4px;border:1px solid var(--border2);background:transparent;cursor:pointer;padding:1px;">
+          <input type="text" value="${esc(tab.color)}" style="flex:1;" oninput="state.tabs[${state.activeTabIdx}].color=this.value;renderSidebar()">
+        </div>
+      </div>
+    </div>
+    <div class="field-row">
+      <span class="field-label">Description</span>
+      <input type="text" value="${esc(tab.panelDesc)}" oninput="state.tabs[${state.activeTabIdx}].panelDesc=this.value">
+    </div>
+  `;
+  area.appendChild(metaBox);
+
+
+  const card = el('div', 'section-card');
+
+  const cardHdr = el('div', 'section-card-header');
+  cardHdr.innerHTML = `<span class="section-label" style="color:${tab.color}">Content Items</span>
+    <span class="section-spacer"></span>
+    <span style="font-size:.7rem;color:var(--text-faint)">${tab.items.length} items</span>`;
+  card.appendChild(cardHdr);
+
+  if (tab.items.length === 0) {
+    const empty = el('div', 'empty-state');
+    empty.style.padding = '2rem';
+    empty.innerHTML = '<p>No items yet — use the buttons below to add content.</p>';
+    card.appendChild(empty);
+  } else {
+    const itemsWrap = el('div', '');
+    tab.items.forEach((item, ii) => {
+      itemsWrap.appendChild(renderItem(item, ii, state.activeTabIdx));
+    });
+    card.appendChild(itemsWrap);
+  }
+
+
+  const addRow = el('div', 'add-item-row');
+  addRow.innerHTML = `
+    <button class="btn" onclick="addItem(${state.activeTabIdx},'task')">＋ Task</button>
+    <button class="btn" onclick="addItem(${state.activeTabIdx},'script')">＋ Script</button>
+    <button class="btn" onclick="addItem(${state.activeTabIdx},'alert')">＋ Alert</button>
+    <button class="btn" onclick="addItem(${state.activeTabIdx},'section')">＋ Section Header</button>
+  `;
+  card.appendChild(addRow);
+  area.appendChild(card);
+}
+
+function renderItem(item, ii, ti) {
+  const wrap = el('div', 'content-item');
+  wrap.id = `item-${ti}-${ii}`;
+
+  const hdr = el('div', 'content-item-header');
+  hdr.style.cursor = 'pointer';
+
+  let summary = '';
+  let typeLabel = item.type;
+  if (item.type === 'task') summary = stripTags(item.name) || '(empty task)';
+  else if (item.type === 'script') summary = item.code?.split('\n')[0]?.slice(0,80) || '(empty script)';
+  else if (item.type === 'alert') summary = stripTags(item.html)?.slice(0,80) || '(empty alert)';
+  else if (item.type === 'section') summary = item.text || '(section header)';
+
+  const notePreview = item.type === 'task' && item.note
+    ? `<span class="item-note-preview">${stripTags(item.note).slice(0,60)}</span>` : '';
+
+  hdr.innerHTML = `
+    <span class="item-type-badge type-${item.type}">${typeLabel}</span>
+    <span class="item-summary">${esc(summary)}</span>
+    ${notePreview}
+    <div class="item-actions">
+      <button class="icon-btn up" title="Move up" onclick="moveItem(event,${ti},${ii},-1)">↑</button>
+      <button class="icon-btn up" title="Move down" onclick="moveItem(event,${ti},${ii},1)">↓</button>
+      <button class="icon-btn del" title="Delete" onclick="deleteItem(event,${ti},${ii})">✕</button>
+      <button class="icon-btn" title="Toggle edit">✎</button>
+    </div>
+  `;
+
+  const expand = el('div', 'item-expand');
+  expand.appendChild(buildItemEditor(item, ii, ti));
+
+  hdr.addEventListener('click', e => {
+    if (e.target.tagName === 'BUTTON') return;
+    expand.classList.toggle('open');
+  });
+
+  wrap.appendChild(hdr);
+  wrap.appendChild(expand);
+  return wrap;
+}
+
+function buildItemEditor(item, ii, ti) {
+  const frag = document.createDocumentFragment();
+
+  if (item.type === 'task') {
+    addField(frag, 'Task Name (HTML ok)', 'textarea', item.name, v => {
+      state.tabs[ti].items[ii].name = v;
+    }, {rows: 2});
+    addField(frag, 'Note / Detail (HTML ok)', 'textarea', item.note, v => {
+      state.tabs[ti].items[ii].note = v;
+    }, {rows: 2});
+
+
+    const brow = el('div', 'field-row');
+    const bl = el('span', 'field-label');
+    bl.textContent = 'Badge';
+    const bwrap = el('div', 'badge-row');
+
+    ['none','crit','warn'].forEach(opt => {
+      const b = el('button', 'badge-opt');
+      b.textContent = opt === 'none' ? 'None' : opt === 'crit' ? ' CRITICAL' : 'WARNING';
+      if ((item.badge || 'none') === opt) b.classList.add(`sel-${opt}`);
+      b.onclick = () => {
+        state.tabs[ti].items[ii].badge = opt === 'none' ? '' : opt;
+        bwrap.querySelectorAll('.badge-opt').forEach(x => x.className = 'badge-opt');
+        b.classList.add(`sel-${opt}`);
+        toast('Badge updated.');
+      };
+      bwrap.appendChild(b);
+    });
+    brow.appendChild(bl);
+    brow.appendChild(bwrap);
+    frag.appendChild(brow);
+
+  } else if (item.type === 'script') {
+    addField(frag, 'Script ID (for copy button)', 'text', item.id, v => {
+      state.tabs[ti].items[ii].id = v;
+    });
+    addField(frag, 'Script Code', 'textarea', item.code, v => {
+      state.tabs[ti].items[ii].code = v;
+    }, {cls: 'script-ta', rows: 12});
+
+  } else if (item.type === 'alert') {
+    addField(frag, 'Alert Content (HTML ok)', 'textarea', item.html, v => {
+      state.tabs[ti].items[ii].html = v;
+    }, {rows: 4});
+
+  } else if (item.type === 'section') {
+    addField(frag, 'Section Heading Text', 'text', item.text, v => {
+      state.tabs[ti].items[ii].text = v;
+    });
+  }
+
+
+  const row = el('div', '');
+  row.style.cssText = 'display:flex;gap:.5rem;margin-top:.2rem;';
+  const saveBtn = el('button', 'btn success');
+  saveBtn.textContent = '✓ Save & Refresh';
+  saveBtn.onclick = () => {
+    renderEditor();
+    toast('Saved.');
+  };
+  row.appendChild(saveBtn);
+  frag.appendChild(row);
+
+  return frag;
+}
+
+function addField(parent, label, type, value, onChange, opts = {}) {
+  const row = el('div', 'field-row');
+  row.style.alignItems = 'flex-start';
+  const lbl = el('span', 'field-label');
+  lbl.textContent = label;
+  lbl.style.paddingTop = '.35rem';
+
+  let input;
+  if (type === 'textarea') {
+    input = document.createElement('textarea');
+    if (opts.cls) input.className = opts.cls;
+    if (opts.rows) input.rows = opts.rows;
+  } else {
+    input = document.createElement('input');
+    input.type = 'text';
+  }
+  input.value = value || '';
+  input.oninput = () => onChange(input.value);
+  input.style.flex = '1';
+
+  row.appendChild(lbl);
+  row.appendChild(input);
+  parent.appendChild(row);
+}
+
+function addItem(ti, type) {
+  const newItem = { type };
+  if (type === 'task') Object.assign(newItem, { name: 'New task', note: '', badge: '' });
+  else if (type === 'script') Object.assign(newItem, { id: 'script-' + Date.now(), code: '# PowerShell script here\n' });
+  else if (type === 'alert') Object.assign(newItem, { html: '<strong>Note:</strong> Alert text here.' });
+  else if (type === 'section') Object.assign(newItem, { text: 'Section Title' });
+
+  state.tabs[ti].items.push(newItem);
+  renderEditor();
+
+  setTimeout(() => {
+    const last = document.querySelector(`#item-${ti}-${state.tabs[ti].items.length - 1} .item-expand`);
+    if (last) last.classList.add('open');
+    last?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 50);
+}
+
+function deleteItem(e, ti, ii) {
+  e.stopPropagation();
+  if (!confirm('Delete this item?')) return;
+  state.tabs[ti].items.splice(ii, 1);
+  renderEditor();
+  toast('Item deleted.');
+}
+
+function moveItem(e, ti, ii, dir) {
+  e.stopPropagation();
+  const items = state.tabs[ti].items;
+  const newIdx = ii + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  [items[ii], items[newIdx]] = [items[newIdx], items[ii]];
+  renderEditor();
+}
+
+function exportHTML() {
+  if (!state.tabs || state.tabs.length === 0) { alert('Nothing to export!'); return; }
+
+  const tabIds = state.tabs.map(t => t.id);
+  const tabClasses = state.tabs.map(t => `t-${t.id}`);
+
+
+  const accentVars = state.tabs.map(t => `  --c-${t.id}: ${t.color};`).join('\n');
+
+
+  const tabBtns = state.tabs.map((t, i) => {
+    const stepSpan = i < 9 ? `<span class="tab-step">0${i+1}</span>` : `<span class="tab-step">${i+1}</span>`;
+    return `    <button class="tab-btn t-${t.id}${i === 0 ? ' active' : ''}" onclick="sw(this,'${t.id}')">${stepSpan}${escH(t.name)}</button>`;
+  }).join('\n');
+
+
+  const panels = state.tabs.map((t, i) => {
+    let panelContent = '';
+
+
+    t.alerts.forEach(al => {
+      panelContent += `  <div class="alert alert-${t.id}">${al.html}</div>\n`;
+    });
+
+    let inSection = false;
+    t.items.forEach(item => {
+      if (item.type === 'section') {
+        if (inSection) panelContent += `</div>\n`; // close prev section
+        panelContent += `<div class="section">\n  <div class="section-title">${escH(item.text)}</div>\n`;
+        inSection = true;
+      } else if (item.type === 'task') {
+        const badgeHTML = item.badge === 'crit'
+          ? `<span class="badge badge-crit">CRITICAL</span>`
+          : item.badge === 'warn'
+          ? `<span class="badge badge-warn">WARNING</span>` : '';
+        const noteHTML = item.note ? `<div class="item-note">${item.note}</div>` : '';
+        panelContent += `<div class="item">
+  <input type="checkbox">
+  <div class="item-body">
+    <div class="item-name">${item.name}</div>${noteHTML}
+  </div>${badgeHTML}
+</div>\n`;
+      } else if (item.type === 'script') {
+        const sid = item.id || ('s' + Math.random().toString(36).slice(2,7));
+        panelContent += `<div style="position:relative">
+  <button class="copy-btn" onclick="cp('${sid}')">Copy</button>
+  <pre id="${sid}" class="ps-script">${escH(item.code || '')}</pre>
+</div>\n`;
+      } else if (item.type === 'alert') {
+        panelContent += `<div class="alert alert-${t.id}">${item.html}</div>\n`;
+      }
+    });
+    if (inSection) panelContent += `</div>\n`;
+
+    return `<div id="panel-${t.id}" class="panel ${t.id}-panel">
+  <div class="panel-header">
+    <div class="panel-stripe"></div>
+    <div>
+      <div class="panel-title">${escH(t.panelTitle)}</div>
+      <div class="panel-desc">${escH(t.panelDesc)}</div>
+    </div>
+  </div>
+${panelContent}
+</div>`;
+  }).join('\n\n');
+
+
+  const tabAccentCSS = state.tabs.map(t => `
+.${t.id}-panel .panel-stripe { background: var(--c-${t.id}); }
+.${t.id}-panel .section-title { border-color: var(--c-${t.id}); color: var(--c-${t.id}); }
+.${t.id}-panel .item input { accent-color: var(--c-${t.id}); }
+.tab-btn.active.t-${t.id} { color: var(--c-${t.id}); }
+.alert-${t.id} { background: rgba(0,0,0,.05); border-color: rgba(128,128,128,.2); }`).join('\n');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escH(state.title)}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg:        #080b10;
+  --surface:   #0d1117;
+  --surface2:  #131820;
+  --border:    #1c2333;
+  --border2:   #252f42;
+  --c-danger:  #e07070;
+  --text:      #d1dae8;
+  --text-dim:  #7a8ba0;
+  --text-faint:#3d4f64;
+  --code-fg:   #8ecae6;
+${accentVars}
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 2.2rem 0; position: sticky; top: 0; z-index: 100; }
+.header-top { display: flex; align-items: baseline; gap: 1.4rem; padding-bottom: .7rem; border-bottom: 1px solid var(--border); }
+.header-title { font-size: .8rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--text); }
+.header-meta { font-family: 'JetBrains Mono', monospace; font-size: .65rem; color: var(--text-faint); letter-spacing: .04em; }
+
+.tabs { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab-btn { position: relative; padding: .65rem 1.1rem; border: none; background: transparent; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); white-space: nowrap; transition: color .15s; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); border-bottom-color: currentColor; }
+.tab-step { display: inline-block; font-size: .55rem; font-family: 'JetBrains Mono', monospace; margin-right: .25rem; opacity: .5; }
+
+.main { padding: 1.8rem 2.2rem; max-width: 1140px; margin: 0 auto; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.panel-header { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.4rem; padding-bottom: 1.1rem; border-bottom: 1px solid var(--border); }
+.panel-stripe { width: 3px; min-height: 38px; border-radius: 2px; flex-shrink: 0; align-self: stretch; }
+.panel-title { font-size: 1rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text); line-height: 1; margin-bottom: .3rem; }
+.panel-desc { font-size: .78rem; color: var(--text-dim); line-height: 1.5; }
+
+.alert { border-radius: 4px; padding: .9rem 1.1rem; font-size: .8rem; line-height: 1.75; color: var(--text); margin-bottom: 1.3rem; border: 1px solid; }
+.alert-danger { background: rgba(224,112,112,.06); border-color: rgba(224,112,112,.25); }
+.alert strong { font-weight: 700; }
+.alert code { font-family: 'JetBrains Mono', monospace; font-size: .73rem; background: rgba(255,255,255,.05); padding: 1px 5px; border-radius: 3px; color: var(--code-fg); }
+
+.section { margin-bottom: 1.8rem; }
+.section-title { font-family: 'JetBrains Mono', monospace; font-size: .62rem; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; color: var(--text-faint); padding: .3rem 0 .3rem .7rem; border-left: 2px solid var(--border2); margin-bottom: .7rem; }
+
+.ps-script { position: relative; background: #050709; border: 1px solid var(--border); border-radius: 5px; padding: 1rem 1.2rem; margin: .6rem 0 1.2rem; font-family: 'JetBrains Mono', monospace; font-size: .72rem; color: #b4cce8; white-space: pre; overflow-x: auto; line-height: 1.7; }
+.copy-btn { position: absolute; top: .6rem; right: .6rem; background: var(--surface2); border: 1px solid var(--border2); border-radius: 3px; color: var(--text-dim); font-family: 'DM Sans', sans-serif; font-size: .6rem; font-weight: 600; letter-spacing: .1em; padding: .18rem .5rem; cursor: pointer; text-transform: uppercase; transition: all .15s; z-index: 2; }
+
+.item { display: flex; align-items: flex-start; gap: .75rem; padding: .55rem .7rem; border-radius: 4px; margin-bottom: 1px; transition: background .1s; }
+.item:hover { background: var(--surface2); }
+.item input[type="checkbox"] { margin-top: 3px; width: 13px; height: 13px; flex-shrink: 0; cursor: pointer; }
+.item-body { flex: 1; min-width: 0; }
+.item-name { font-size: .84rem; font-weight: 500; color: var(--text); line-height: 1.4; }
+.item-note { font-family: 'JetBrains Mono', monospace; font-size: .68rem; color: var(--text-dim); margin-top: .2rem; line-height: 1.55; }
+.item-note code { background: rgba(255,255,255,.05); padding: 1px 4px; border-radius: 3px; color: var(--code-fg); font-size: .67rem; }
+
+.badge { font-size: .55rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; flex-shrink: 0; margin-top: 4px; }
+.badge-crit { background: rgba(224,112,112,.15); color: var(--c-danger); border: 1px solid rgba(224,112,112,.3); }
+.badge-warn { background: rgba(246,169,106,.12); color: #f6a96a; border: 1px solid rgba(246,169,106,.25); }
+
+${tabAccentCSS}
+
+@media (max-width: 720px) { .main, header { padding-left: 1rem; padding-right: 1rem; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <span class="header-title">${escH(state.title)}</span>
+    <span class="header-meta">${escH(state.headerMeta)}</span>
+  </div>
+  <div class="tabs">
+${tabBtns}
+  </div>
+</header>
+
+<div class="main">
+${panels}
+</div>
+
+<script>
+function sw(btn,t){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  btn.classList.add('active');
+}
+function cp(id){
+  const el=document.getElementById(id);
+  navigator.clipboard.writeText(el.innerText).then(()=>{
+    const btn=el.previousElementSibling;
+    const orig=btn.textContent;
+    btn.textContent='Copied';
+    btn.style.color='#4fd1a8';
+    setTimeout(()=>{btn.textContent=orig;btn.style.color='';},1800);
+  });
+}
+document.querySelector('.tab-btn.active')?.click();
+<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cyberpatriot-checklist.html';
+  a.click();
+  toast('✓ HTML exported!');
+}
+
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+
+function el(tag, cls) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
+}
+function esc(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escH(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function stripTags(s) {
+  return (s || '').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+}
+</script>
+</body>
+</html>
